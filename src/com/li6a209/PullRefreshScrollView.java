@@ -35,16 +35,19 @@ import com.li6a209.pullrefreshscrollview.R;
 public class PullRefreshScrollView extends ScrollView{
 	
 	private static final String TAG = "ElasticScrollView";
-	private static final boolean DEBUG = true; 
+	private static final boolean DEBUG = true;
+	private static final int PULL_TO_REFRESH_STATUS = 0x00;
+	private static final int RELEASE_TO_REFRESH_STATUS = 0x01;
+	private static final int REFRESHING_STATUS = 0x02;
 	private View mLayout;
 	private FrameLayout mContentLy;
-	private float mPreY = -1000;
+	private float mLastY = -1000;
 	private Rect mNormal = new Rect();
 	private Rect mNormalBak = new Rect();
 	private View mHeadView;
 	private View mHeadLeftProgress;
 	private boolean mIsMoveLayout = false;
-	private int mNeedRefreshDeltaY = 30;
+	private float mNeedRefreshDeltaY;
 	private boolean mNeedRefresh;
 	private boolean mIsCanRefresh = false;
 	private int mTop;
@@ -53,17 +56,17 @@ public class PullRefreshScrollView extends ScrollView{
 	/*滚动的时候监听*/
 //	private int mLastTop;
 	
-	private Animation mDownToUp;
-	private Animation mUpToDown;
-	private TextView mTitle; 
-	private ImageView mImage;
+	private Animation mDownToUpAnim;
+	private Animation mUpToDownAnim;
+	private TextView mHeadTitle; 
+	private ImageView mHeadLeftImage;
 	
 	private boolean mIsAnimation;
 	private boolean mIsRefreshing;
 	
 	private Timer mTimer;
 //	private boolean mFirstLayout = true;
-	private int mDefautlTopMargin = - 75;
+	private float mDefautlTopMargin;
 	
 
 	public interface OnScrollUpDownListener{
@@ -95,17 +98,16 @@ public class PullRefreshScrollView extends ScrollView{
 		mLayout = findViewById(R.id.layout);
 		mContentLy = (FrameLayout)findViewById(R.id.content_ly);
 		mHeadView = findViewById(R.id.headView);
-		mImage = (ImageView)mHeadView.findViewById(R.id.leftLogo);
-		mTitle = (TextView)mHeadView.findViewById(R.id.textTitle);
-		mDownToUp = AnimationUtils.loadAnimation(this.getContext(), R.anim.down_to_up);
-		mUpToDown = AnimationUtils.loadAnimation(this.getContext(), R.anim.up_to_down);
-		mDownToUp.setFillAfter(true);
-		mUpToDown.setFillAfter(true);
+		mHeadLeftImage = (ImageView)mHeadView.findViewById(R.id.leftLogo);
+		mHeadTitle = (TextView)mHeadView.findViewById(R.id.textTitle);
+		mDownToUpAnim = AnimationUtils.loadAnimation(this.getContext(), R.anim.down_to_up);
+		mUpToDownAnim = AnimationUtils.loadAnimation(this.getContext(), R.anim.up_to_down);
+		mDownToUpAnim.setFillAfter(true);
+		mUpToDownAnim.setFillAfter(true);
+		mNeedRefreshDeltaY = getResources().getDimension(R.dimen.need_refresh_delta);
+		mDefautlTopMargin = -getResources().getDimension(R.dimen.head_view_height);
 		mHeadLeftProgress = (ProgressBar)findViewById(R.id.left_progressbar);
-		//去掉边缘阴影～
 		setFadingEdgeLength(0);
-		setDrawingCacheEnabled(false);
-		mContentLy.setDrawingCacheEnabled(false);
 		TextView tv = new TextView(getContext());
 		tv.setText("i am content");
 		tv.setGravity(Gravity.CENTER);
@@ -113,16 +115,6 @@ public class PullRefreshScrollView extends ScrollView{
 		tv.setBackgroundColor(Color.GRAY);
 		tv.setDrawingCacheEnabled(false);
 		mContentLy.addView(tv, LayoutParams.FILL_PARENT, 1300);
-	}
-	
-	@Override
-	public void onFinishInflate(){
-		super.onFinishInflate();
-	}
-	
-	
-	public void setData(){
-		
 	}
 	
 	public void setOnReqMoreListener(OnReqMoreListener listener){
@@ -141,6 +133,11 @@ public class PullRefreshScrollView extends ScrollView{
 		mOnRefereshListener = listener;
 	}
 	
+	public void setContentView(View view){
+		mContentLy.addView(view);
+	}
+	
+	
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec){
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -157,14 +154,11 @@ public class PullRefreshScrollView extends ScrollView{
 		}
 		int action = ev.getAction();
 		switch (action) {
-		
-		//down 事件无效- 应该是被图墙点击消耗掉了
 		case MotionEvent.ACTION_DOWN:
-			mPreY = ev.getY();
+			mLastY = ev.getY();
 			mDowY = ev.getY();
 			break;
 		case MotionEvent.ACTION_UP:
-			//是往上还是往下滑动
 			if(null != mScrollUpDown){
 				if(ev.getY() - mDowY >= 20){
 					mScrollUpDown.onScrollUp(true);
@@ -172,31 +166,28 @@ public class PullRefreshScrollView extends ScrollView{
 					mScrollUpDown.onScrollUp(false);
 				}
 			}
-			
-			
 			if(mIsRefreshing){
 				return super.onTouchEvent(ev);
 			}
 			if(isNeedAnimation()) {
 				mIsAnimation = true;
-				animation();
+				release();
 				mIsMoveLayout = false;
 			}
-			mPreY = -1000;
+			mLastY = -1000;
 			break;
 		case MotionEvent.ACTION_MOVE:
 			//判断是不是 首次移动,
-			if(-1000 == mPreY){
-				mPreY = ev.getY();
+			if(-1000 == mLastY){
+				mLastY = ev.getY();
 				mDowY = ev.getY();
 				return super.onTouchEvent(ev);
 			}
-			final float preY = mPreY;
+			final float preY = mLastY;
 			float nowY = ev.getY();
 			int deltaY = (int) (preY - nowY);
 			
-			
-			mPreY = nowY;
+			mLastY = nowY;
 			//正在载入数据
 			if(mIsRefreshing){
 				if(deltaY < 0){
@@ -206,9 +197,9 @@ public class PullRefreshScrollView extends ScrollView{
 			
 			//下滑
 			if(getHeadViewTopMargin() > mNeedRefreshDeltaY){
-				canRefresh(true);
+				needRefresh(true);
 			}else{
-				canRefresh(false);
+				needRefresh(false);
 			}
 			deltaY /= 2;
 			LinearLayout.LayoutParams param = 
@@ -238,7 +229,7 @@ public class PullRefreshScrollView extends ScrollView{
 	public void refreshOver(){
 		if(mIsRefreshing){
 			mIsRefreshing = false;
-			mImage.setVisibility(View.VISIBLE);
+			mHeadLeftImage.setVisibility(View.VISIBLE);
 			mHeadLeftProgress.setVisibility(View.INVISIBLE);
 			final Timer timer = new Timer();
 			timer.schedule(new TimerTask() {
@@ -264,20 +255,37 @@ public class PullRefreshScrollView extends ScrollView{
 		}
 	}
 	
-	private void canRefresh(boolean b){
-		mNeedRefresh = b;
-		if(b){
+	private void needRefresh(boolean needRefresh){
+		mNeedRefresh = needRefresh;
+		if(needRefresh){
 			if(!mIsCanRefresh){
 				mIsCanRefresh = true;
-				mImage.startAnimation(mDownToUp);
-				mTitle.setText("松手刷新...");
+				mHeadLeftImage.startAnimation(mDownToUpAnim);
+				mHeadTitle.setText("松手刷新...");
 			}
 		}else{
 			if(mIsCanRefresh){
 				mIsCanRefresh = false;
-				mImage.startAnimation(mUpToDown);
-				mTitle.setText("下拉刷新...");
+				mHeadLeftImage.startAnimation(mUpToDownAnim);
+				mHeadTitle.setText("下拉刷新...");
 			}
+		}
+	}
+	
+	private void updateStatus(int status){
+		switch (status) {
+		case PULL_TO_REFRESH_STATUS:
+			mHeadTitle.setText(getResources().getString(R.string.pull_to_refresh));
+			mHeadLeftImage.startAnimation(mUpToDownAnim);
+			break;
+		case RELEASE_TO_REFRESH_STATUS:
+			mHeadTitle.setText(getResources().getString(R.string.release_to_refresh));
+			mHeadLeftImage.startAnimation(mUpToDownAnim);
+			break;
+		case REFRESHING_STATUS:
+			break;
+		default:
+			break;
 		}
 	}
 	
@@ -287,13 +295,13 @@ public class PullRefreshScrollView extends ScrollView{
 		return param.topMargin;
 	}
 	
-	private void setHeadViewMargin(int topMargin){
+	private void setHeadViewMargin(float topMargin){
 		
 		LinearLayout.LayoutParams param = 
 				(LinearLayout.LayoutParams)mHeadView.getLayoutParams();
 		log("header height is" + mHeadView.getHeight());
 		log("header margin is" + ((LinearLayout.LayoutParams)mHeadView.getLayoutParams()).topMargin);
-		param.topMargin = topMargin;
+		param.topMargin = (int)topMargin;
 		log("top margin" +param.topMargin);
 		mHeadView.setLayoutParams(param);
 	}
@@ -329,12 +337,12 @@ public class PullRefreshScrollView extends ScrollView{
 //		
 //	}
 	
-	private void animation() {
+	private void release() {
 		int animationTop; 
 		if(mNeedRefresh){
 			animationTop = -getHeadViewTopMargin();
 		}else{
-			animationTop = mDefautlTopMargin - getHeadViewTopMargin();
+			animationTop = (int) (mDefautlTopMargin - getHeadViewTopMargin());
 		}
 		
 		TranslateAnimation ta = new TranslateAnimation(0, 0, 0,
@@ -356,15 +364,15 @@ public class PullRefreshScrollView extends ScrollView{
 				mLayout.clearAnimation();
 				mNormal.set(mNormalBak);
 				mIsCanRefresh = false;
-				mImage.clearAnimation();
-				mTitle.setText("下拉刷新");
+				mHeadLeftImage.clearAnimation();
+				mHeadTitle.setText("下拉刷新");
 				mIsAnimation = false;
 				if(mNeedRefresh){
 					setHeadViewMargin(0);
 					if(null != mOnRefereshListener){
 						mIsRefreshing = true;
 						mHeadLeftProgress.setVisibility(View.VISIBLE);
-						mImage.setVisibility(View.INVISIBLE);
+						mHeadLeftImage.setVisibility(View.INVISIBLE);
 						mOnRefereshListener.onReferesh();
 					}
 				}else{
