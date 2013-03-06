@@ -5,58 +5,15 @@
     android:layout_height="wrap_content"
     android:orientation="vertical" >
 
-    <!-- the head -->
-
-    <RelativeLayout
-        android:background="#700070"
-        android:layout_marginTop="-60dp"
-        android:id="@+id/headView"
-        android:layout_width="fill_parent"
-        android:paddingTop="5dp"
-        android:layout_height="60dip" >
-
-        <FrameLayout
-            android:layout_width="80dp"
-            android:layout_height="fill_parent"
-            android:paddingLeft="20dp" >
-
-            <ImageView
-                android:id="@+id/leftLogo"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:src="@drawable/indicator_arrow" />
-
-            <ProgressBar
-                android:layout_gravity="center"
-                style="?android:attr/progressBarStyleSmall"
-                android:id="@+id/left_progressbar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:visibility="invisible" />
-        </FrameLayout>
-
-        <TextView
-            android:id="@+id/textTitle"
-            android:layout_width="100.0dip"
-            android:layout_height="25.0dip"
-            android:gravity="center"
-            android:layout_alignParentTop="true"
-            android:layout_centerHorizontal="true"
-            android:text="下拉刷新..."
-            android:textColor="#000000"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/textTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/textTitle"
-            android:layout_centerHorizontal="true" />
-    </RelativeLayout>
-
+	<LinearLayout
+	    android:id="@+id/pull_refresh_head" 
+	    android:layout_height="wrap_content"
+	    android:layout_width="match_parent">
+	</LinearLayout>
+	
     <!-- //图墙 -->
-
-    <RelativeLayout
+    <LinearLayout
+        android:orientation="vertical"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content" >
 
@@ -89,12 +46,6 @@
                 android:layout_marginRight="2.0dip"
                 android:layout_toLeftOf="@id/text" />
         </RelativeLayout>
-
-        <ImageView
-            android:id="@+id/mask"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="#33ff73aa" />
-    </RelativeLayout>
+    </LinearLayout>
 
 </LinearLayout>
