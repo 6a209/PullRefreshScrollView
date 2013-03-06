@@ -14,7 +14,7 @@
         android:theme="@style/AppTheme" >
         
         <activity 
-            android:name="com.li6a209.ScrollViewAct">
+            android:name="com.li6a209.ScrollViewDemoAct">
              <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
