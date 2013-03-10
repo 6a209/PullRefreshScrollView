@@ -4,12 +4,9 @@
     android:layout_height="fill_parent">
 
     <RelativeLayout
-        android:background="#700070"
-        android:layout_marginTop="-60dp"
-        android:id="@+id/headView"
         android:layout_width="fill_parent"
         android:paddingTop="5dp"
-        android:layout_height="60dip" >
+        android:layout_height="fill_parent" >
 
         <FrameLayout
             android:layout_width="80dp"
@@ -17,7 +14,7 @@
             android:paddingLeft="20dp" >
 
             <ImageView
-                android:id="@+id/leftLogo"
+                android:id="@+id/head_layout_left_arrow"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:src="@drawable/indicator_arrow" />
@@ -25,28 +22,28 @@
             <ProgressBar
                 android:layout_gravity="center"
                 style="?android:attr/progressBarStyleSmall"
-                android:id="@+id/left_progressbar"
+                android:id="@+id/head_layout_left_progressbar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:visibility="invisible" />
+                android:visibility="gone" />
         </FrameLayout>
 
         <TextView
-            android:id="@+id/textTitle"
+            android:id="@+id/head_layout_title"
             android:layout_width="100.0dip"
             android:layout_height="25.0dip"
             android:gravity="center"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
-            android:text="下拉刷新..."
             android:textColor="#000000"
             android:textSize="16sp" />
 
         <TextView
-            android:id="@+id/textTime"
+            android:id="@+id/head_layout_refresh_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/textTitle"
+            android:layout_below="@id/head_layout_title"
             android:layout_centerHorizontal="true" />
+        
     </RelativeLayout>
 </LinearLayout>

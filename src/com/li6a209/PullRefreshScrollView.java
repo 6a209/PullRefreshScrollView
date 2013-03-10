@@ -1,25 +1,15 @@
 package com.li6a209;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.Animation.AnimationListener;
-import android.view.animation.AnimationUtils;
-import android.view.animation.TranslateAnimation;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -34,39 +24,35 @@ import com.li6a209.pullrefreshscrollview.R;
  */
 public class PullRefreshScrollView extends ScrollView{
 	
-	private static final String TAG = "ElasticScrollView";
-	private static final boolean DEBUG = true;
+//	private static final String TAG = "ElasticScrollView";
+//	private static final boolean DEBUG = true;
 	private static final int PULL_TO_REFRESH_STATUS = 0x00;
 	private static final int RELEASE_TO_REFRESH_STATUS = 0x01;
 	private static final int REFRESHING_STATUS = 0x02;
-	private View mLayout;
+	private static final int NORMAL_STATUS = 0x03;
+	
+	//mode head or foot
+	private static final int HEAD_MODE = 0x00;
+	private static final int FOOT_MODE = 0x01;
+	private int mStatus = NORMAL_STATUS;
+	private int mMode = HEAD_MODE;
 	private FrameLayout mContentLy;
 	private float mLastY = -1000;
-	private Rect mNormal = new Rect();
-	private Rect mNormalBak = new Rect();
-	private View mHeadView;
-	private View mHeadLeftProgress;
-	private boolean mIsMoveLayout = false;
+	private FrameLayout mHeadViewLy;
+	private FrameLayout mFootViewLy;
 	private float mNeedRefreshDeltaY;
-	private boolean mNeedRefresh;
-	private boolean mIsCanRefresh = false;
-	private int mTop;
+	private float mNeedGetMoreDeltaY;
 	private float mDowY;
 	
-	/*滚动的时候监听*/
-//	private int mLastTop;
-	
-	private Animation mDownToUpAnim;
-	private Animation mUpToDownAnim;
-	private TextView mHeadTitle; 
-	private ImageView mHeadLeftImage;
+	private ILoadingLayout mHeadLoadingView;
+	private ILoadingLayout mFootLoadingView;
 	
 	private boolean mIsAnimation;
-	private boolean mIsRefreshing;
+//	private boolean mIsRefreshing = false;
 	
-	private Timer mTimer;
-//	private boolean mFirstLayout = true;
 	private float mDefautlTopMargin;
+	private float mDefaultPaddingBottom;
+	
 	
 
 	public interface OnScrollUpDownListener{
@@ -94,19 +80,20 @@ public class PullRefreshScrollView extends ScrollView{
 	public PullRefreshScrollView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		LayoutInflater inflater = LayoutInflater.from(context);
-		inflater.inflate(R.layout.elastic_scroll_view, this, true);
-		mLayout = findViewById(R.id.layout);
+		inflater.inflate(R.layout.pull_refresh_scroll_view, this, true);
 		mContentLy = (FrameLayout)findViewById(R.id.content_ly);
-		mHeadView = findViewById(R.id.headView);
-		mHeadLeftImage = (ImageView)mHeadView.findViewById(R.id.leftLogo);
-		mHeadTitle = (TextView)mHeadView.findViewById(R.id.textTitle);
-		mDownToUpAnim = AnimationUtils.loadAnimation(this.getContext(), R.anim.down_to_up);
-		mUpToDownAnim = AnimationUtils.loadAnimation(this.getContext(), R.anim.up_to_down);
-		mDownToUpAnim.setFillAfter(true);
-		mUpToDownAnim.setFillAfter(true);
+		mHeadViewLy = (FrameLayout)findViewById(R.id.head_ly);
+		mFootViewLy = (FrameLayout)findViewById(R.id.foot_ly);
+		mDefaultPaddingBottom = 0;
+		mHeadLoadingView = new HeadLoadingView(context);
+		mFootLoadingView = new FootLoadingView(context);
+		mHeadViewLy.addView((View)mHeadLoadingView);
+		mFootViewLy.addView((View)mFootLoadingView);
+		mHeadLoadingView.normal();
+		mFootLoadingView.normal();
 		mNeedRefreshDeltaY = getResources().getDimension(R.dimen.need_refresh_delta);
+		mNeedGetMoreDeltaY = getResources().getDimension(R.dimen.need_refresh_delta);
 		mDefautlTopMargin = -getResources().getDimension(R.dimen.head_view_height);
-		mHeadLeftProgress = (ProgressBar)findViewById(R.id.left_progressbar);
 		setFadingEdgeLength(0);
 		TextView tv = new TextView(getContext());
 		tv.setText("i am content");
@@ -114,7 +101,7 @@ public class PullRefreshScrollView extends ScrollView{
 		tv.setTextSize(100);
 		tv.setBackgroundColor(Color.GRAY);
 		tv.setDrawingCacheEnabled(false);
-		mContentLy.addView(tv, LayoutParams.FILL_PARENT, 1300);
+		mContentLy.addView(tv, LayoutParams.FILL_PARENT, 3300);
 	}
 	
 	public void setOnReqMoreListener(OnReqMoreListener listener){
@@ -137,16 +124,6 @@ public class PullRefreshScrollView extends ScrollView{
 		mContentLy.addView(view);
 	}
 	
-	
-	@Override
-	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec){
-		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		int newHeightSpec = MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(mLayout.getMeasuredHeight()), 
-				MeasureSpec.getMode(heightMeasureSpec));
-		mLayout.measure(widthMeasureSpec, newHeightSpec);
-	}
-
-	
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
 		if(mIsAnimation){
@@ -158,6 +135,7 @@ public class PullRefreshScrollView extends ScrollView{
 			mLastY = ev.getY();
 			mDowY = ev.getY();
 			break;
+		case MotionEvent.ACTION_CANCEL:
 		case MotionEvent.ACTION_UP:
 			if(null != mScrollUpDown){
 				if(ev.getY() - mDowY >= 20){
@@ -166,14 +144,7 @@ public class PullRefreshScrollView extends ScrollView{
 					mScrollUpDown.onScrollUp(false);
 				}
 			}
-			if(mIsRefreshing){
-				return super.onTouchEvent(ev);
-			}
-			if(isNeedAnimation()) {
-				mIsAnimation = true;
-				release();
-				mIsMoveLayout = false;
-			}
+			release(mStatus);
 			mLastY = -1000;
 			break;
 		case MotionEvent.ACTION_MOVE:
@@ -183,42 +154,70 @@ public class PullRefreshScrollView extends ScrollView{
 				mDowY = ev.getY();
 				return super.onTouchEvent(ev);
 			}
-			final float preY = mLastY;
+			final float lastY = mLastY;
 			float nowY = ev.getY();
-			int deltaY = (int) (preY - nowY);
-			
+			int deltaY = (int) (lastY - nowY);
 			mLastY = nowY;
-			//正在载入数据
-			if(mIsRefreshing){
-				if(deltaY < 0){
+//			Log.d("cur scroll y is ", getScrollY() + "");
+//			Log.d("deltaY is ", deltaY + " ");
+			if(deltaY < 0){
+				//down
+				if(getScrollY() == 0 && mStatus != REFRESHING_STATUS){
+					// head
+//					mMode = HEAD_MODE;
+					updateMode(HEAD_MODE);
+					updateHeadMargin(deltaY);
+					if(getHeadViewTopMargin() >= mNeedRefreshDeltaY){
+						updateStatus(RELEASE_TO_REFRESH_STATUS, mHeadLoadingView);
+					}else{
+						updateStatus(PULL_TO_REFRESH_STATUS, mHeadLoadingView);
+					}
+					return super.onTouchEvent(ev);	
+				}
+				
+				if(mStatus != REFRESHING_STATUS && mStatus != NORMAL_STATUS){
+					// foot
+//					mMode = FOOT_MODE;
+					updateMode(FOOT_MODE);
+					if(getPaddingBottom() > 0 && getPaddingBottom() < mNeedGetMoreDeltaY){
+						updateStatus(PULL_TO_REFRESH_STATUS, mFootLoadingView);
+					}else if(getPaddingBottom() >= mNeedGetMoreDeltaY){
+						updateStatus(RELEASE_TO_REFRESH_STATUS, mFootLoadingView);
+					}else if(getPaddingBottom() == 0){
+						updateStatus(NORMAL_STATUS, mFootLoadingView);
+					}
+					updateFootPadding(deltaY);
+				}
+				
+			}else{
+				//up
+				if(mMode == HEAD_MODE && mStatus != REFRESHING_STATUS 
+					&& mStatus != NORMAL_STATUS){
+					// head
+					updateMode(HEAD_MODE);
+					updateHeadMargin(deltaY);
+					if(getHeadViewTopMargin() > mDefautlTopMargin 
+						&& getHeadViewTopMargin() < mNeedRefreshDeltaY){
+						updateStatus(PULL_TO_REFRESH_STATUS, mHeadLoadingView);
+					}else if(getHeadViewTopMargin() == mDefautlTopMargin){
+						updateStatus(NORMAL_STATUS, mHeadLoadingView);
+					}
 					return super.onTouchEvent(ev);
 				}
+				if(getScrollY() + getHeight() >= mContentLy.getHeight() + mFootViewLy.getHeight() 
+					&& mStatus != REFRESHING_STATUS){
+					// foot 
+					updateMode(FOOT_MODE);
+					updateFootPadding(deltaY);
+					if(getPaddingBottom() >= mNeedGetMoreDeltaY){
+						updateStatus(RELEASE_TO_REFRESH_STATUS, mFootLoadingView);
+					}else{
+						updateStatus(PULL_TO_REFRESH_STATUS, mFootLoadingView);
+					}
+				}
+				
 			}
 			
-			//下滑
-			if(getHeadViewTopMargin() > mNeedRefreshDeltaY){
-				needRefresh(true);
-			}else{
-				needRefresh(false);
-			}
-			deltaY /= 2;
-			LinearLayout.LayoutParams param = 
-					(LinearLayout.LayoutParams)mHeadView.getLayoutParams();
-			if(!mIsMoveLayout){
-				if(getScrollY() == 0 && deltaY < 0){
-					//是否已经移动了布局(没有)
-					mIsMoveLayout = true;
-					param.topMargin -= deltaY;
-					mHeadView.setLayoutParams(param);
-				}
-			}else{
-				param.topMargin -= deltaY;
-				mHeadView.setLayoutParams(param);
-				if(mLayout.getTop() <= mTop){
-					mIsMoveLayout = false;
-				}
-				return true;
-			}
 			break;
 		default:
 			break;
@@ -226,185 +225,132 @@ public class PullRefreshScrollView extends ScrollView{
 		return super.onTouchEvent(ev);
 	}
 	
+	private void updateHeadMargin(int deltaY){
+		LinearLayout.LayoutParams param = 
+				(LinearLayout.LayoutParams)mHeadViewLy.getLayoutParams();
+		param.topMargin -= deltaY;
+		if(param.topMargin <= mDefautlTopMargin){
+			param.topMargin = (int)mDefautlTopMargin;
+		}
+		mHeadViewLy.setLayoutParams(param);
+	}
+	
+	private void updateFootPadding(int deltaY){
+		int bottomPadding = getPaddingBottom() + deltaY;
+		if(bottomPadding <= 0){
+			bottomPadding = 0;
+		}
+		setPadding(getPaddingLeft(), getPaddingTop(), getPaddingRight(), bottomPadding);
+	}
+	
 	public void refreshOver(){
-		if(mIsRefreshing){
-			mIsRefreshing = false;
-			mHeadLeftImage.setVisibility(View.VISIBLE);
-			mHeadLeftProgress.setVisibility(View.INVISIBLE);
-			final Timer timer = new Timer();
-			timer.schedule(new TimerTask() {
-				@Override
-				public void run() {
-					post(new Runnable() {
-						@Override
-						public void run() {
-							LinearLayout.LayoutParams param = 
-								(LinearLayout.LayoutParams)mHeadView.getLayoutParams();
-							int headMargin = param.topMargin - 1;
-							if(param.topMargin <= -mHeadView.getHeight()){
-								setHeadViewMargin(-mHeadView.getHeight());
-								timer.cancel();
-							}else{
-								setHeadViewMargin(headMargin);
-							}
-							
-						}
-					});
-				}
-			}, 2, 2);
-		}
+		MaginAnimation maginAnim = new MaginAnimation(0, (int)mDefautlTopMargin, 300);
+		maginAnim.startAnimation(mHeadViewLy);
+		maginAnim.setOnAnimationOverListener(new OnAnimationOverListener() {
+			@Override
+			public void onOver() {
+				updateStatus(NORMAL_STATUS, mHeadLoadingView);
+			}
+		});
 	}
 	
-	private void needRefresh(boolean needRefresh){
-		mNeedRefresh = needRefresh;
-		if(needRefresh){
-			if(!mIsCanRefresh){
-				mIsCanRefresh = true;
-				mHeadLeftImage.startAnimation(mDownToUpAnim);
-				mHeadTitle.setText("松手刷新...");
-			}
-		}else{
-			if(mIsCanRefresh){
-				mIsCanRefresh = false;
-				mHeadLeftImage.startAnimation(mUpToDownAnim);
-				mHeadTitle.setText("下拉刷新...");
-			}
-		}
-	}
 	
-	private void updateStatus(int status){
+	private void updateStatus(int status, ILoadingLayout layout){
+		if(mStatus == status){
+			return;
+		}
+		mStatus = status;
+		debug();
 		switch (status) {
 		case PULL_TO_REFRESH_STATUS:
-			mHeadTitle.setText(getResources().getString(R.string.pull_to_refresh));
-			mHeadLeftImage.startAnimation(mUpToDownAnim);
+			layout.pullToRefresh();
 			break;
 		case RELEASE_TO_REFRESH_STATUS:
-			mHeadTitle.setText(getResources().getString(R.string.release_to_refresh));
-			mHeadLeftImage.startAnimation(mUpToDownAnim);
+			layout.releaseToRefresh();
 			break;
 		case REFRESHING_STATUS:
+			layout.refreshing();
+			break;
+		case NORMAL_STATUS:
+			layout.normal();
 			break;
 		default:
 			break;
 		}
 	}
 	
+	private void updateMode(int mode){
+		
+		mMode = mode;
+	}
+	
 	private int getHeadViewTopMargin(){
 		LinearLayout.LayoutParams param = 
-				(LinearLayout.LayoutParams)mHeadView.getLayoutParams();
+				(LinearLayout.LayoutParams)mHeadViewLy.getLayoutParams();
 		return param.topMargin;
 	}
 	
-	private void setHeadViewMargin(float topMargin){
-		
-		LinearLayout.LayoutParams param = 
-				(LinearLayout.LayoutParams)mHeadView.getLayoutParams();
-		log("header height is" + mHeadView.getHeight());
-		log("header margin is" + ((LinearLayout.LayoutParams)mHeadView.getLayoutParams()).topMargin);
-		param.topMargin = (int)topMargin;
-		log("top margin" +param.topMargin);
-		mHeadView.setLayoutParams(param);
-	}
-	
-	@Override
-	public void onDetachedFromWindow(){
-		super.onDetachedFromWindow();
-		if(mTimer != null){
-			mTimer.cancel();
+	private void release(int status) {
+		if(HEAD_MODE == mMode){
+			headReleas();
+		}else if(FOOT_MODE == mMode){
+			footReleas();
 		}
+		
 	}
 	
-//	private int mScrollTotal;
-//	
-//	/**
-//	 * 滚动停止事件
-//	 */
-//	private void scrollStop(){
-//		// scroll 的总高度
-//		mScrollTotal = mLayout.getHeight() - getHeight();
-//		mScrollTotal -= 250;
-//		int scrollY = getScrollY();
-//		if(scrollY >= mScrollTotal){
-//			//是否要加载更多
-//			if(null != mReqMoreListener){
-//				mReqMoreListener.onReqMore();
-//			}
-//		}
-//		//将scrollY　传到ctrl　调度图片
-//		if(mStopListener != null){
-//			mStopListener.onStop(scrollY);
-//		}
-//		
-//	}
-	
-	private void release() {
-		int animationTop; 
-		if(mNeedRefresh){
-			animationTop = -getHeadViewTopMargin();
+	private void headReleas(){
+		int toMagin;
+		if(RELEASE_TO_REFRESH_STATUS == mStatus){
+			toMagin = 0;
+		}else if(PULL_TO_REFRESH_STATUS == mStatus){
+			toMagin = (int)mDefautlTopMargin;
 		}else{
-			animationTop = (int) (mDefautlTopMargin - getHeadViewTopMargin());
+			return;
 		}
-		
-		TranslateAnimation ta = new TranslateAnimation(0, 0, 0,
-				animationTop);
-		ta.setDuration(300);
-		mLayout.startAnimation(ta);
-		ta.setAnimationListener(new AnimationListener() {
-			
+		MaginAnimation maginAnim = new MaginAnimation(getHeadViewTopMargin(), toMagin, 300);
+		maginAnim.startAnimation(mHeadViewLy);
+		maginAnim.setOnAnimationOverListener(new OnAnimationOverListener() {
 			@Override
-			public void onAnimationStart(Animation animation) {
-			}
-			
-			@Override
-			public void onAnimationRepeat(Animation animation) {
-			}
-			
-			@Override
-			public void onAnimationEnd(Animation animation) {
-				mLayout.clearAnimation();
-				mNormal.set(mNormalBak);
-				mIsCanRefresh = false;
-				mHeadLeftImage.clearAnimation();
-				mHeadTitle.setText("下拉刷新");
-				mIsAnimation = false;
-				if(mNeedRefresh){
-					setHeadViewMargin(0);
+			public void onOver() {
+				if(mStatus == RELEASE_TO_REFRESH_STATUS){
 					if(null != mOnRefereshListener){
-						mIsRefreshing = true;
-						mHeadLeftProgress.setVisibility(View.VISIBLE);
-						mHeadLeftImage.setVisibility(View.INVISIBLE);
+						updateStatus(REFRESHING_STATUS, mHeadLoadingView);
 						mOnRefereshListener.onReferesh();
 					}
-				}else{
-					setHeadViewMargin(mDefautlTopMargin);
+				}else if(mStatus == PULL_TO_REFRESH_STATUS){
+					updateStatus(NORMAL_STATUS, mHeadLoadingView);
 				}
 			}
 		});
+	}
+	
+	private void footReleas(){
+		updateFootPadding(-getPaddingBottom());
+		mStatus = NORMAL_STATUS;
+		updateStatus(NORMAL_STATUS, mFootLoadingView);
+		Log.d("is in foot release ------", "bottom is " + getPaddingBottom());
+	}
+	
+	private void debug(){
+		String status = "";
+		String mode = "";
+		if(mStatus == PULL_TO_REFRESH_STATUS){
+			status = "PULL_TO_REFRESH_STATUS";
+		}else if(mStatus == RELEASE_TO_REFRESH_STATUS){
+			status = "RELEASE_TO_REFRESH_STATUS";
+		}else if(mStatus == NORMAL_STATUS){
+			status = "NORMAL_STATUS";
+		}else if(mStatus == REFRESHING_STATUS){
+			status = "REFRESHING_STATUS";
+		}
+		Log.d("the status is ", status);
 		
-	}
-
-	/**
-	 * 隐藏滚动条
-	 * @param hide
-	 */
-	public void hideProgress(boolean hide){
-		View v = findViewById(R.id.wall_progress_ly);
-		if(hide){
-			v.setVisibility(View.INVISIBLE);
-		}else{
-			v.setVisibility(View.VISIBLE);
+		if(mMode == HEAD_MODE){
+			mode = "HEAD_MODE";
+		}else if(mMode == FOOT_MODE){
+			mode = "FOOT_MODE";
 		}
+		Log.d("the mode is ", mode);
 	}
-	
-	private boolean isNeedAnimation() {
-		if(getHeadViewTopMargin() > mDefautlTopMargin){
-			return true;
-		}
-		return false;
-	}
-	
-	private void log(String msg){
-		Log.d(TAG, msg);
-	}
-	
 }
