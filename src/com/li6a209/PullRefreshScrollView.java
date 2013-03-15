@@ -36,7 +36,7 @@ public class PullRefreshScrollView extends ScrollView{
 	private static final int FOOT_MODE = 0x01;
 	private int mStatus = NORMAL_STATUS;
 	private int mMode = HEAD_MODE;
-	private FrameLayout mContentLy;
+	protected FrameLayout mContentLy;
 	private float mLastY = -1000;
 	private FrameLayout mHeadViewLy;
 	private FrameLayout mFootViewLy;
@@ -48,12 +48,7 @@ public class PullRefreshScrollView extends ScrollView{
 	private ILoadingLayout mFootLoadingView;
 	
 	private boolean mIsAnimation;
-//	private boolean mIsRefreshing = false;
-	
-	private float mDefautlTopMargin;
-	private float mDefaultPaddingBottom;
-	
-	
+	private final float mDefautlTopMargin;
 
 	public interface OnScrollUpDownListener{
 		public void onScrollUp(boolean isUp);
@@ -84,7 +79,6 @@ public class PullRefreshScrollView extends ScrollView{
 		mContentLy = (FrameLayout)findViewById(R.id.content_ly);
 		mHeadViewLy = (FrameLayout)findViewById(R.id.head_ly);
 		mFootViewLy = (FrameLayout)findViewById(R.id.foot_ly);
-		mDefaultPaddingBottom = 0;
 		mHeadLoadingView = new HeadLoadingView(context);
 		mFootLoadingView = new FootLoadingView(context);
 		mHeadViewLy.addView((View)mHeadLoadingView);
@@ -95,13 +89,13 @@ public class PullRefreshScrollView extends ScrollView{
 		mNeedGetMoreDeltaY = getResources().getDimension(R.dimen.need_refresh_delta);
 		mDefautlTopMargin = -getResources().getDimension(R.dimen.head_view_height);
 		setFadingEdgeLength(0);
-		TextView tv = new TextView(getContext());
-		tv.setText("i am content");
-		tv.setGravity(Gravity.CENTER);
-		tv.setTextSize(100);
-		tv.setBackgroundColor(Color.GRAY);
-		tv.setDrawingCacheEnabled(false);
-		mContentLy.addView(tv, LayoutParams.FILL_PARENT, 3300);
+//		TextView tv = new TextView(getContext());
+//		tv.setText("i am content");
+//		tv.setGravity(Gravity.CENTER);
+//		tv.setTextSize(100);
+//		tv.setBackgroundColor(Color.GRAY);
+//		tv.setDrawingCacheEnabled(false);
+//		mContentLy.addView(tv, LayoutParams.FILL_PARENT, 3300);
 	}
 	
 	public void setOnReqMoreListener(OnReqMoreListener listener){
@@ -122,6 +116,36 @@ public class PullRefreshScrollView extends ScrollView{
 	
 	public void setContentView(View view){
 		mContentLy.addView(view);
+	}
+	
+	public void refreshOver(){
+		MaginAnimation maginAnim = new MaginAnimation(0, (int)mDefautlTopMargin, 300);
+		maginAnim.startAnimation(mHeadViewLy);
+		maginAnim.setOnAnimationOverListener(new OnAnimationOverListener() {
+			@Override
+			public void onOver() {
+				updateStatus(NORMAL_STATUS, mHeadLoadingView);
+			}
+		});
+	}
+	
+	public void getMoreOver(){
+		updateStatus(NORMAL_STATUS, mFootLoadingView);
+	}
+	
+//	public HeadLoadingView getHeadLoadingView(){
+//		return mHeadLoadingView;
+//	}
+	
+	public void setToRefreshing(){
+		MaginAnimation maginAnim = new MaginAnimation(getHeadViewTopMargin(), 0, 300);
+		maginAnim.startAnimation(mHeadViewLy);
+		maginAnim.setOnAnimationOverListener(new OnAnimationOverListener() {
+			@Override
+			public void onOver() {
+				updateStatus(REFRESHING_STATUS, mHeadLoadingView);
+			}
+		});
 	}
 	
 	@Override
@@ -158,15 +182,13 @@ public class PullRefreshScrollView extends ScrollView{
 			float nowY = ev.getY();
 			int deltaY = (int) (lastY - nowY);
 			mLastY = nowY;
-//			Log.d("cur scroll y is ", getScrollY() + "");
-//			Log.d("deltaY is ", deltaY + " ");
 			if(deltaY < 0){
 				//down
 				if(getScrollY() == 0 && mStatus != REFRESHING_STATUS){
 					// head
 //					mMode = HEAD_MODE;
 					updateMode(HEAD_MODE);
-					updateHeadMargin(deltaY);
+					updateHeadMargin(deltaY / 2);
 					if(getHeadViewTopMargin() >= mNeedRefreshDeltaY){
 						updateStatus(RELEASE_TO_REFRESH_STATUS, mHeadLoadingView);
 					}else{
@@ -186,7 +208,7 @@ public class PullRefreshScrollView extends ScrollView{
 					}else if(getPaddingBottom() == 0){
 						updateStatus(NORMAL_STATUS, mFootLoadingView);
 					}
-					updateFootPadding(deltaY);
+					updateFootPadding(deltaY / 2);
 				}
 				
 			}else{
@@ -195,7 +217,7 @@ public class PullRefreshScrollView extends ScrollView{
 					&& mStatus != NORMAL_STATUS){
 					// head
 					updateMode(HEAD_MODE);
-					updateHeadMargin(deltaY);
+					updateHeadMargin(deltaY / 2);
 					if(getHeadViewTopMargin() > mDefautlTopMargin 
 						&& getHeadViewTopMargin() < mNeedRefreshDeltaY){
 						updateStatus(PULL_TO_REFRESH_STATUS, mHeadLoadingView);
@@ -208,14 +230,13 @@ public class PullRefreshScrollView extends ScrollView{
 					&& mStatus != REFRESHING_STATUS){
 					// foot 
 					updateMode(FOOT_MODE);
-					updateFootPadding(deltaY);
+					updateFootPadding(deltaY / 2);
 					if(getPaddingBottom() >= mNeedGetMoreDeltaY){
 						updateStatus(RELEASE_TO_REFRESH_STATUS, mFootLoadingView);
 					}else{
 						updateStatus(PULL_TO_REFRESH_STATUS, mFootLoadingView);
 					}
 				}
-				
 			}
 			
 			break;
@@ -243,18 +264,6 @@ public class PullRefreshScrollView extends ScrollView{
 		setPadding(getPaddingLeft(), getPaddingTop(), getPaddingRight(), bottomPadding);
 	}
 	
-	public void refreshOver(){
-		MaginAnimation maginAnim = new MaginAnimation(0, (int)mDefautlTopMargin, 300);
-		maginAnim.startAnimation(mHeadViewLy);
-		maginAnim.setOnAnimationOverListener(new OnAnimationOverListener() {
-			@Override
-			public void onOver() {
-				updateStatus(NORMAL_STATUS, mHeadLoadingView);
-			}
-		});
-	}
-	
-	
 	private void updateStatus(int status, ILoadingLayout layout){
 		if(mStatus == status){
 			return;
@@ -280,7 +289,6 @@ public class PullRefreshScrollView extends ScrollView{
 	}
 	
 	private void updateMode(int mode){
-		
 		mMode = mode;
 	}
 	
@@ -308,6 +316,8 @@ public class PullRefreshScrollView extends ScrollView{
 		}else{
 			return;
 		}
+		Log.d("headView margin", "" + getHeadViewTopMargin());
+		Log.d("to magin", "" + toMagin);
 		MaginAnimation maginAnim = new MaginAnimation(getHeadViewTopMargin(), toMagin, 300);
 		maginAnim.startAnimation(mHeadViewLy);
 		maginAnim.setOnAnimationOverListener(new OnAnimationOverListener() {
@@ -326,10 +336,15 @@ public class PullRefreshScrollView extends ScrollView{
 	}
 	
 	private void footReleas(){
+		if(getPaddingBottom() > mNeedGetMoreDeltaY){
+			if(null != mReqMoreListener){
+				updateStatus(REFRESHING_STATUS, mFootLoadingView);
+				mReqMoreListener.onReqMore();
+			}
+		}else{
+			updateStatus(NORMAL_STATUS, mFootLoadingView);
+		}
 		updateFootPadding(-getPaddingBottom());
-		mStatus = NORMAL_STATUS;
-		updateStatus(NORMAL_STATUS, mFootLoadingView);
-		Log.d("is in foot release ------", "bottom is " + getPaddingBottom());
 	}
 	
 	private void debug(){

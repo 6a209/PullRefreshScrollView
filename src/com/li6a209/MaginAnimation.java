@@ -11,13 +11,14 @@ public class MaginAnimation{
 
 	
 	private int mStep = 5;
-	private int mPeriod;
+	private int mPeriod = 10;
 	private int mToMaing;
 	private boolean mIsOver = false;
 	private OnAnimationOverListener mOverListener;
 	public MaginAnimation(int startMagin, int toMagin, int duration){
 		int abs = Math.abs(startMagin - toMagin);
 		mToMaing = toMagin;
+		Log.d("abs / mStep > ","start " + startMagin + " to margin" + toMagin);
 		mPeriod = duration / (abs / mStep); 
 		Log.d("the period period is ", mPeriod + "");
 	}

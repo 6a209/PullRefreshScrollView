@@ -17,7 +17,7 @@
                 android:id="@+id/head_layout_left_arrow"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:src="@drawable/indicator_arrow" />
+                android:src="@drawable/down_arrow" />
 
             <ProgressBar
                 android:layout_gravity="center"
@@ -35,7 +35,7 @@
             android:gravity="center"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
-            android:textColor="#000000"
+            android:textColor="#f16f99"
             android:textSize="16sp" />
 
         <TextView
