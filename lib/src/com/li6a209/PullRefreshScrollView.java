@@ -136,6 +136,11 @@ public class PullRefreshScrollView extends ScrollView{
 		mFootViewLy.setVisibility(View.GONE);
 	}
 	
+	public void showFootLoading(){
+		mCanPullUpGetMore = true;
+		mFootViewLy.setVisibility(View.VISIBLE);
+	}
+	
 	public void setToRefreshing(){
 		MaginAnimation maginAnim = new MaginAnimation(getHeadViewTopMargin(), 0, 300);
 		maginAnim.startAnimation(mHeadViewLy);

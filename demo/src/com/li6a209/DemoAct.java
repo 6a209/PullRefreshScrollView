@@ -22,7 +22,6 @@ public class DemoAct extends Activity{
 		super.onCreate(bundle);
 		mScrollView = new PullRefreshScrollView(this);
 		setContentView(mScrollView);
-		
 		TextView tv = new TextView(this);
 		tv.setText(" i am content");
 		tv.setTextSize(80);
@@ -35,7 +34,6 @@ public class DemoAct extends Activity{
 				new GetDataTask(true).execute();
 			}
 		});
-		
 		mScrollView.setOnReqMoreListener(new OnReqMoreListener() {
 			@Override
 			public void onReqMore() {
