@@ -1,0 +1,15 @@
+bin/
+gen/
+/.project
+project.properties
+/.classpath
+.DS_Store
+build/
+.idea
+*.iml
+run.sh
+.gradle
+gradle
+gradlew.bat
+local.properties
+gradlew
