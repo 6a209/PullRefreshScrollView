@@ -49,6 +49,7 @@ public class PullRefreshScrollView extends ScrollView{
 	private boolean mIsAnimation;
 	private final float mDefautlTopMargin;
 	private boolean mCanPullUpGetMore = true;
+	private boolean mCanPullDownRefresh = true;
 	
 	private int mTouchSlop;
 	private View mCustomFootLoadingView;
@@ -169,6 +170,10 @@ public class PullRefreshScrollView extends ScrollView{
 			LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 	}
 	
+	public void setCanPullDown(boolean is){
+		mCanPullDownRefresh = is;
+	}
+	
 	public void showFootLoading(){
 		mCanPullUpGetMore = true;
 		mFootViewLy.setVisibility(View.VISIBLE);
@@ -226,6 +231,9 @@ public class PullRefreshScrollView extends ScrollView{
 				if(getScrollY() == 0 && mStatus != REFRESHING_STATUS){
 					// head
 //					mMode = HEAD_MODE;
+					if (!mCanPullDownRefresh) {
+						return super.onTouchEvent(ev);
+					}
 					updateMode(HEAD_MODE);
 					updateHeadMargin(deltaY / 2);
 					if(getHeadViewTopMargin() >= mNeedRefreshDeltaY){
