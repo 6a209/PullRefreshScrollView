@@ -82,7 +82,8 @@ public class HeadLoadingView extends LinearLayout implements ILoadingLayout{
 	}
 	
 	private void formatTime(){
-		SimpleDateFormat sdf = new SimpleDateFormat("上次更新：yy-MM-dd HH:mm:ss");
+        String lastUpdate = getResources().getString(R.string.last_update);
+		SimpleDateFormat sdf = new SimpleDateFormat(lastUpdate + " yy-MM-dd HH:mm:ss");
 		mTime.setText(sdf.format(lastTime)) ;
 	}
 	
