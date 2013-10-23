@@ -36,7 +36,7 @@ public class PullRefreshScrollView extends ScrollView{
 	protected FrameLayout mContentLy;
 	private float mLastY = -1000;
 	private FrameLayout mHeadViewLy;
-	private FrameLayout mFootViewLy;
+	protected FrameLayout mFootViewLy;
 	private float mNeedRefreshDeltaY;
 	private float mNeedGetMoreDeltaY;
 	private float mDowY;
