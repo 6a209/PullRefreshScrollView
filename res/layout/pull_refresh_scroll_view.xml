@@ -3,6 +3,7 @@
     android:id="@+id/scroll_layout"
     android:layout_width="fill_parent"
     android:layout_height="1200dp"
+    android:clickable="true"
     android:orientation="vertical" >
 
     <FrameLayout

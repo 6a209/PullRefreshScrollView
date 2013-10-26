@@ -1,6 +1,7 @@
 package com.pullrefresh.scrollview;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -159,7 +160,6 @@ public class PullRefreshScrollView extends ScrollView{
 			mFootViewLy.addView(mCustomFootLoadingView, new LayoutParams(
 					LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		}
-		
 	}
 	
 	public void setNonePullUp(View view){
