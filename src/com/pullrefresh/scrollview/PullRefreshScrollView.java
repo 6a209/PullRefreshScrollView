@@ -112,7 +112,6 @@ public class PullRefreshScrollView extends ScrollView{
 	}
 	
 
-	
 	public void setOnRefereshListener(OnRefereshListener listener){
 		mOnRefereshListener = listener;
 	}
