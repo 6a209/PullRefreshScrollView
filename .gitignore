@@ -1,8 +1,8 @@
 bin/
 gen/
-/.project
+.project
 project.properties
-/.classpath
+.classpath
 .DS_Store
 build/
 .idea
@@ -13,3 +13,4 @@ gradle
 gradlew.bat
 local.properties
 gradlew
+lint.xml
