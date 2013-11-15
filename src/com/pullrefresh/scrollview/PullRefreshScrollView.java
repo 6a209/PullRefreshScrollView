@@ -186,6 +186,9 @@ public class PullRefreshScrollView extends ScrollView{
 			@Override
 			public void onOver() {
 				updateStatus(REFRESHING_STATUS, mHeadLoadingView);
+				if (null != mOnRefereshListener) {
+					mOnRefereshListener.onReferesh();
+				}
 			}
 		});
 	}
