@@ -178,19 +178,24 @@ public class PullRefreshScrollView extends ScrollView{
 		mCanPullUpGetMore = true;
 		mFootViewLy.setVisibility(View.VISIBLE);
 	}
-	
+
+	private boolean isRefreshOver = true;
 	public void setToRefreshing(){
-		MaginAnimation maginAnim = new MaginAnimation(getHeadViewTopMargin(), 0, 300);
-		maginAnim.startAnimation(mHeadViewLy);
-		maginAnim.setOnAnimationOverListener(new OnAnimationOverListener() {
-			@Override
-			public void onOver() {
-				updateStatus(REFRESHING_STATUS, mHeadLoadingView);
-				if (null != mOnRefereshListener) {
-					mOnRefereshListener.onReferesh();
+		if (isRefreshOver) {
+			isRefreshOver = false;
+			MaginAnimation maginAnim = new MaginAnimation(getHeadViewTopMargin(), 0, 300);
+			maginAnim.startAnimation(mHeadViewLy);
+			maginAnim.setOnAnimationOverListener(new OnAnimationOverListener() {
+				@Override
+				public void onOver() {
+					updateStatus(REFRESHING_STATUS, mHeadLoadingView);
+					if (null != mOnRefereshListener) {
+						mOnRefereshListener.onReferesh();
+					}
+					isRefreshOver = true;
 				}
-			}
-		});
+			});			
+		}
 	}
 	
 	/**
