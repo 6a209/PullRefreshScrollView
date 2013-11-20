@@ -55,8 +55,6 @@ public class PullRefreshScrollView extends ScrollView{
 	private int mTouchSlop;
 	private View mCustomFootLoadingView;
 
-	
-	
 	public interface OnReqMoreListener{
 		public void onReqMore();
 	}
@@ -121,6 +119,7 @@ public class PullRefreshScrollView extends ScrollView{
 	}
 	
 	public void refreshOver(){
+
 		MaginAnimation maginAnim = new MaginAnimation(0, (int)mDefautlTopMargin, 300);
 		maginAnim.startAnimation(mHeadViewLy);
 		maginAnim.setOnAnimationOverListener(new OnAnimationOverListener() {
@@ -160,7 +159,12 @@ public class PullRefreshScrollView extends ScrollView{
 					LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		}
 	}
-	
+
+
+    /**
+     * custom
+     * @param view
+     */
 	public void setNonePullUp(View view){
 		mCustomFootLoadingView = view;
 		mCanPullUpGetMore = false;
@@ -185,10 +189,9 @@ public class PullRefreshScrollView extends ScrollView{
 			@Override
 			public void onOver() {
 				updateStatus(REFRESHING_STATUS, mHeadLoadingView);
+                mOnRefereshListener.onReferesh();
 			}
-		});
-	}
-	
+fjkddnfdfdfkj
 	/**
 	 * it the content top padding
 	 * @param top
@@ -199,7 +202,6 @@ public class PullRefreshScrollView extends ScrollView{
 	
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
-//		Debug.startMethodTracing("touch");
 		if(mIsAnimation){
 			return super.onTouchEvent(ev);
 		}
@@ -212,15 +214,15 @@ public class PullRefreshScrollView extends ScrollView{
 		case MotionEvent.ACTION_CANCEL:
 		case MotionEvent.ACTION_UP:
 			release(mStatus);
-			mLastY = -1000;
+//			mLastY = -1000;
 			break;
 		case MotionEvent.ACTION_MOVE:
 			//判断是不是 首次移动,
-			if(-1000 == mLastY){
-				mLastY = ev.getY();
-				mDowY = ev.getY();
-				return super.onTouchEvent(ev);
-			}
+//			if(-1000 == mLastY){
+//				mLastY = ev.getY();
+//				mDowY = ev.getY();
+//				return super.onTouchEvent(ev);
+//			}
 			final float lastY = mLastY;
 			float nowY = ev.getY();
 			int deltaY = (int) (lastY - nowY);
@@ -264,6 +266,9 @@ public class PullRefreshScrollView extends ScrollView{
 				if(mMode == HEAD_MODE && mStatus != REFRESHING_STATUS 
 					&& mStatus != NORMAL_STATUS){
 					// head
+                    if (!mCanPullDownRefresh) {
+                        return super.onTouchEvent(ev);
+					}
 					updateMode(HEAD_MODE);
 					updateHeadMargin(deltaY / 2);
 					if(getHeadViewTopMargin() > mDefautlTopMargin 
@@ -289,23 +294,27 @@ public class PullRefreshScrollView extends ScrollView{
 					}
 				}
 			}
-			
 			break;
 		default:
 			break;
 		}
-//		Debug.stopMethodTracing();
 		return super.onTouchEvent(ev);
 	}
 	
 	private void updateHeadMargin(int deltaY){
-		LinearLayout.LayoutParams param = 
-				(LinearLayout.LayoutParams)mHeadViewLy.getLayoutParams();
-		param.topMargin -= deltaY;
-		if(param.topMargin <= mDefautlTopMargin){
-			param.topMargin = (int)mDefautlTopMargin;
-		}
-		mHeadViewLy.setLayoutParams(param);
+//		LinearLayout.LayoutParams param =
+//				(LinearLayout.LayoutParams)mHeadViewLy.getLayoutParams();
+//		param.topMargin -= deltaY;
+//		if(param.topMargin <= mDefautlTopMargin){
+//			param.topMargin = (int)mDefautlTopMargin;
+//		}
+//		mHeadViewLy.setLayoutParams(param);
+
+        int topPadding = getPaddingTop() + deltaY;
+        if(topPadding <= mDefautlTopMargin){
+            topPadding = (int) mDefautlTopMargin;
+        }
+        setPadding(getPaddingLeft(), topPadding, getPaddingRight(), getPaddingBottom());
 	}
 	
 	private void updateFootPadding(int deltaY){
