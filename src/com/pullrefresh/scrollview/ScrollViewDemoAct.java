@@ -3,7 +3,8 @@ package com.pullrefresh.scrollview;
 import android.app.Activity;
 import android.os.AsyncTask;
 import android.os.Bundle;
-
+import android.view.View;
+import android.widget.TextView;
 
 
 public class ScrollViewDemoAct extends Activity{
@@ -21,6 +22,11 @@ public class ScrollViewDemoAct extends Activity{
 				new GetDataTask().execute();
 			}
 		});
+        TextView tv = new TextView(this);
+        tv.setText("the F**k code -------------/n /r ------>>>>>>>>>>>>>> /n /r <<<<<<<<<<<<<<<<<<<___________----------------+++++++++++++++++");
+
+        tv.setTextSize(200);
+        mScrollView.setContentView(tv);
 	}
 
 	private class GetDataTask extends AsyncTask<Void, Void, String[]> {

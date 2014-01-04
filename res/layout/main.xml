@@ -4,8 +4,10 @@
     android:layout_height="fill_parent">
     
     
-    <com.scrollview.PullRefreshScrollView
+    <com.pullrefresh.scrollview.PullRefreshScrollView
         android:id="@+id/scrollvew"
         android:layout_height="fill_parent"
-        android:layout_width="fill_parent"/>
+        android:layout_width="fill_parent">
+
+    </com.pullrefresh.scrollview.PullRefreshScrollView>
 </LinearLayout>

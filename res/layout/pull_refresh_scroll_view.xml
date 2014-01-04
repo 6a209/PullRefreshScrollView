@@ -4,20 +4,23 @@
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:clickable="true"
+    android:layout_marginTop="-60dp"
     android:orientation="vertical" >
 
     <FrameLayout
         android:id="@+id/head_ly"
+        android:background="#880000"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_marginTop="-60dp" >
-    </FrameLayout>
+        android:layout_height="wrap_content"/>
 
-    <FrameLayout
+    <LinearLayout
+        android:orientation="vertical"
+        android:clickable="true"
+        android:focusable="true"
         android:id="@+id/content_ly"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content" >
-    </FrameLayout>
+    </LinearLayout>
 
     <FrameLayout
         android:id="@+id/foot_ly"
