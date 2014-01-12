@@ -35,7 +35,7 @@ public class PullRefreshScrollView extends ScrollView{
 	private static final int FOOT_MODE = 0x01;
 	private int mStatus = NORMAL_STATUS;
 	private int mMode = HEAD_MODE;
-	protected FrameLayout mContentLy;
+	protected LinearLayout mContentLy;
 	private float mLastY = 0;
 	private FrameLayout mHeadViewLy;
 	protected FrameLayout mFootViewLy;
@@ -46,7 +46,18 @@ public class PullRefreshScrollView extends ScrollView{
 	private ILoadingLayout mFootLoadingView;
 	private LinearLayout mNoMoreView;
 	private LinearLayout mEmptyView;
-	
+
+    public enum MODE{
+        BOTH,
+        ONLY_REFREH,
+        ONLY_GET_MORE,
+    };
+
+    public enum GET_MORE_TYPE{
+        PULL_UP,
+        END_AUTO,
+    }
+
 	private boolean mIsAnimation;
 	private final float mDefautlTopPadding;
 	private boolean mCanPullUpGetMore = true;
@@ -95,14 +106,13 @@ public class PullRefreshScrollView extends ScrollView{
 		ViewConfiguration vc = ViewConfiguration.get(context);
 		mTouchSlop = vc.getScaledTouchSlop();
 		inflater.inflate(R.layout.pull_refresh_scroll_view, this, true);
-		mContentLy = (FrameLayout)findViewById(R.id.content_ly);
+		mContentLy = (LinearLayout)findViewById(R.id.scroll_layout);
 		mHeadViewLy = (FrameLayout)findViewById(R.id.head_ly);
 		mFootViewLy = (FrameLayout)findViewById(R.id.foot_ly);
 		mHeadLoadingView = new HeadLoadingView(context);
 		mFootLoadingView = new FootLoadingView(context);
 		mNoMoreView = (LinearLayout) inflater.inflate(R.layout.no_more_layout, null);
 		mEmptyView = (LinearLayout) inflater.inflate(R.layout.empty_layout, this, false);
-//		mFootViewLy.addView(mNoMoreView);
 		mHeadViewLy.addView((View)mHeadLoadingView);
 		mFootViewLy.addView((View)mFootLoadingView);
 		mHeadLoadingView.normal();
@@ -131,9 +141,9 @@ public class PullRefreshScrollView extends ScrollView{
     }
 	
 	public void setContentView(View view){
-		mContentLy.addView(view);
+		mContentLy.addView(view, 1);
 	}
-	
+
 	public void refreshOver(){
         mToStatus = NORMAL_STATUS;
         debug("the contentPaddingTop is =>" + getContentPaddingTop());
@@ -309,13 +319,13 @@ public class PullRefreshScrollView extends ScrollView{
                         return super.onTouchEvent(ev);
 					}
 					updateMode(HEAD_MODE);
-					updateHeadPadding(deltaY / 2);
+					updateHeadPadding(deltaY);
 					if(getContentPaddingTop() > mDefautlTopPadding){
 						updateStatus(RELEASE_TO_REFRESH_STATUS, mHeadLoadingView);
 					}else if(getContentPaddingTop() == 0){
 						updateStatus(NORMAL_STATUS, mHeadLoadingView);
 					}
-					return super.onTouchEvent(ev);
+				    return true;
 				}
 				if(getScrollY() + getHeight() >= mContentLy.getHeight() + mFootViewLy.getHeight() 
 					&& mStatus != REFRESHING_STATUS){

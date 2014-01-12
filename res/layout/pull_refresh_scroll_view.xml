@@ -13,15 +13,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
-    <LinearLayout
-        android:orientation="vertical"
-        android:clickable="true"
-        android:focusable="true"
-        android:id="@+id/content_ly"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content" >
-    </LinearLayout>
-
     <FrameLayout
         android:id="@+id/foot_ly"
         android:layout_width="match_parent"
